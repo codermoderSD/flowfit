@@ -264,7 +264,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           }));
 
           // Notify user focus mode started
-          if ("Notification" in window && Notification.permission === "granted") {
+          if (
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
             try {
               new Notification("🎯 Focus Mode Started", {
                 body: `Relaxation over. Focus on work for ${currentSettings.interval} minutes.`,
