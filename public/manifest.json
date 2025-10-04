@@ -1,0 +1,22 @@
+{
+  "name": "FlowFit",
+  "short_name": "FlowFit",
+  "description": "Stay active while working remotely",
+  "start_url": "/",
+  "favicon": "/logo.png",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8b5cf6",
+  "icons": [
+    {
+      "src": "/icon-192.jpg",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.jpg",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
