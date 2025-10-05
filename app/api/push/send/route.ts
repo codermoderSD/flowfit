@@ -17,7 +17,9 @@ declare global {
   }
 }
 
-type GlobalWithPush = { pushSubscriptions?: Map<string, PushSub> } & typeof globalThis;
+type GlobalWithPush = {
+  pushSubscriptions?: Map<string, PushSub>;
+} & typeof globalThis;
 const g = globalThis as GlobalWithPush;
 if (!g.pushSubscriptions) {
   g.pushSubscriptions = new Map<string, PushSub>();
@@ -34,7 +36,14 @@ export async function POST(request: NextRequest) {
       url?: string;
       subscription?: webpush.PushSubscription;
     };
-    const { title, body: messageBody, icon, badge, url, subscription: targetSubscription } = body;
+    const {
+      title,
+      body: messageBody,
+      icon,
+      badge,
+      url,
+      subscription: targetSubscription,
+    } = body;
 
     console.log(
       "Send request received. Total subscriptions:",

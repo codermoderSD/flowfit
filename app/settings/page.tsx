@@ -77,7 +77,7 @@ export default function SettingsPage() {
     setIsSaving(true);
 
     try {
-  const { error } = await supabase.from("user_settings").upsert(
+      const { error } = await supabase.from("user_settings").upsert(
         {
           user_id: user.id,
           work_start: settings.work_start,
@@ -245,8 +245,8 @@ export default function SettingsPage() {
                 <span>10 cycles</span>
               </div>
               <p className="text-xs text-gray-500">
-                After every {settings.major_break_interval} work cycles, you&apos;ll
-                get a longer break
+                After every {settings.major_break_interval} work cycles,
+                you&apos;ll get a longer break
               </p>
             </div>
 

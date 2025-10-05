@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { ArrowLeft, Plus, Trash2 } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const DEFAULT_ACTIVITIES = [
   "10 pushups",
@@ -20,89 +20,98 @@ const DEFAULT_ACTIVITIES = [
   "10 lunges (each leg)",
   "15 jumping jacks",
   "Stretch your arms overhead for 30 seconds",
-]
+];
 
 export default function ActivitiesPage() {
-  const router = useRouter()
-  const supabase = createClient()
+  const router = useRouter();
+  const supabase = createClient();
 
-  const [user, setUser] = useState<{ id: string } | null>(null)
-  const [activities, setActivities] = useState<Array<{ id: string; name: string }>>([])
-  const [newActivity, setNewActivity] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [activities, setActivities] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  const [newActivity, setNewActivity] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const loadActivities = async () => {
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/auth/login")
-      return
+      router.push("/auth/login");
+      return;
     }
 
-    setUser(user)
+    setUser(user);
 
     // Load activities from Supabase
     const { data: activitiesData } = await supabase
       .from("activities")
       .select("*")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: true });
 
     if (activitiesData && activitiesData.length > 0) {
-      setActivities(activitiesData)
+      setActivities(activitiesData);
     } else {
       // Initialize with default activities
       const defaultActivitiesData = DEFAULT_ACTIVITIES.map((name) => ({
         user_id: user.id,
         name,
-      }))
+      }));
 
-      const { data: insertedData } = await supabase.from("activities").insert(defaultActivitiesData).select()
+      const { data: insertedData } = await supabase
+        .from("activities")
+        .insert(defaultActivitiesData)
+        .select();
 
       if (insertedData) {
-        setActivities(insertedData)
+        setActivities(insertedData);
       }
     }
 
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    loadActivities()
-  }, [loadActivities])
+    loadActivities();
+  }, [loadActivities]);
 
   const addActivity = async () => {
-    if (!user || !newActivity.trim()) return
+    if (!user || !newActivity.trim()) return;
 
     const { data, error } = await supabase
       .from("activities")
       .insert({ user_id: user.id, name: newActivity.trim() })
       .select()
-      .single()
+      .single();
 
     if (data && !error) {
-      setActivities([...activities, data])
-      setNewActivity("")
+      setActivities([...activities, data]);
+      setNewActivity("");
     }
-  }
+  };
 
   const removeActivity = async (id: string) => {
-    if (!user) return
+    if (!user) return;
 
-    const { error } = await supabase.from("activities").delete().eq("id", id).eq("user_id", user.id)
+    const { error } = await supabase
+      .from("activities")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (!error) {
-      setActivities(activities.filter((a) => a.id !== id))
+      setActivities(activities.filter((a) => a.id !== id));
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white p-6 flex items-center justify-center">
         <p className="text-gray-400">Loading...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -110,16 +119,24 @@ export default function ActivitiesPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon" className="rounded-xl hover:bg-white/5 text-gray-300 hover:text-white">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-xl hover:bg-white/5 text-gray-300 hover:text-white"
+            >
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-semibold text-white">Manage Activities</h1>
+          <h1 className="text-2xl font-semibold text-white">
+            Manage Activities
+          </h1>
         </div>
 
         <Card className="bg-[#151515] border-[#252525] shadow-xl">
           <CardHeader>
-            <CardTitle className="text-lg text-white">Add Custom Activity</CardTitle>
+            <CardTitle className="text-lg text-white">
+              Add Custom Activity
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
@@ -142,7 +159,9 @@ export default function ActivitiesPage() {
 
         <Card className="bg-[#151515] border-[#252525] shadow-xl">
           <CardHeader>
-            <CardTitle className="text-lg text-white">All Activities ({activities.length})</CardTitle>
+            <CardTitle className="text-lg text-white">
+              All Activities ({activities.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -167,5 +186,5 @@ export default function ActivitiesPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

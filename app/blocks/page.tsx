@@ -98,7 +98,7 @@ export default function TimeBlocksPage() {
         }))
       );
     }
-  };
+  }
 
   const toggleDay = (day: string) => {
     setNewBlock((prev) => ({
@@ -438,7 +438,7 @@ export default function TimeBlocksPage() {
         {oneTimeBlocks.length > 0 && (
           <Card className="bg-[#151515] border-[#252525] shadow-xl">
             <CardHeader>
-                <CardTitle className="text-white text-lg">
+              <CardTitle className="text-white text-lg">
                 Today&apos;s Blocks
               </CardTitle>
             </CardHeader>
