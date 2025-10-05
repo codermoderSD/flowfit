@@ -372,7 +372,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             // Notification for major break
             showNotification(
               "🎉 Major Break Time!",
-              `Great work! You've completed ${currentSettings.major_break_interval} cycles. Take a ${currentSettings.major_break_duration}-minute break to recharge!`
+              `Great work! You&apos;ve completed ${currentSettings.major_break_interval} cycles. Take a ${currentSettings.major_break_duration}-minute break to recharge!`
             );
           } else {
             // Regular work timer
@@ -431,7 +431,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             // Notification for major break
             showNotification(
               "🎉 Major Break Time!",
-              `Excellent! You've completed ${currentSettings.major_break_interval} cycles. Enjoy your ${currentSettings.major_break_duration}-minute major break!`
+              `Excellent! You&apos;ve completed ${currentSettings.major_break_interval} cycles. Enjoy your ${currentSettings.major_break_duration}-minute major break!`
             );
           } else {
             // Regular work timer
@@ -483,8 +483,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
           // Notification
           const message = state.isMajorBreak
-            ? `Major break over! Let's get back to it: ${randomActivity}`
-            : `Let's do: ${randomActivity}`;
+            ? `Major break over! Let&apos;s get back to it: ${randomActivity}`
+            : `Let&apos;s do: ${randomActivity}`;
 
           showNotification(
             "⏰ Time to Move!",
@@ -581,7 +581,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
     showNotification(
       "⏰ Time to Move!",
-      `Let's do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`
+      `Let&apos;s do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`
     );
   }, [isWithinWorkHours, isInTimeBlock]);
 
@@ -714,7 +714,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     // Send workout notification
     showNotification(
       "⏰ Time to Move!",
-      `Let's do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`
+      `Let&apos;s do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`
     );
   }, []);
 

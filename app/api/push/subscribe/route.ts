@@ -4,28 +4,33 @@ import webpush from 'web-push';
 // Configure VAPID details
 webpush.setVapidDetails(
   'mailto:flowfit@example.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string,
+  process.env.VAPID_PRIVATE_KEY as string,
 );
 
-// In-memory storage for subscriptions (use database in production)
-// We use a singleton pattern to share state across API routes
-let subscriptions: Map<string, webpush.PushSubscription>;
+type PushSub = webpush.PushSubscription;
 
-// Initialize subscriptions map
-if (!(global as any).pushSubscriptions) {
-  (global as any).pushSubscriptions = new Map();
+declare global {
+  interface GlobalThis {
+    pushSubscriptions?: Map<string, PushSub>;
+  }
 }
-subscriptions = (global as any).pushSubscriptions;
+
+type GlobalWithPush = { pushSubscriptions?: Map<string, PushSub> } & typeof globalThis;
+const g = globalThis as GlobalWithPush;
+if (!g.pushSubscriptions) {
+  g.pushSubscriptions = new Map<string, PushSub>();
+}
+const subscriptions = g.pushSubscriptions as Map<string, PushSub>;
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const subscription = body.subscription;
-    
-    // Use endpoint as unique identifier
-    const userId = subscription.endpoint;
-    subscriptions.set(userId, subscription);
+    const body = (await request.json()) as { subscription: PushSub };
+  const subscription: PushSub = body.subscription;
+
+  // Use endpoint as unique identifier
+  const userId = subscription.endpoint;
+  subscriptions.set(userId, subscription);
     
     console.log('Subscription saved for:', userId);
     console.log('Total subscriptions:', subscriptions.size);

@@ -24,7 +24,7 @@ interface TimeBlock {
 export default function TimeBlocksPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [newBlock, setNewBlock] = useState({
     title: "",
@@ -67,9 +67,9 @@ export default function TimeBlocksPage() {
 
   useEffect(() => {
     loadTimeBlocks();
-  }, []);
+  }, [loadTimeBlocks]);
 
-  const loadTimeBlocks = async () => {
+  async function loadTimeBlocks() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -438,8 +438,8 @@ export default function TimeBlocksPage() {
         {oneTimeBlocks.length > 0 && (
           <Card className="bg-[#151515] border-[#252525] shadow-xl">
             <CardHeader>
-              <CardTitle className="text-white text-lg">
-                Today's Blocks
+                <CardTitle className="text-white text-lg">
+                Today&apos;s Blocks
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">

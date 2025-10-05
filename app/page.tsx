@@ -37,7 +37,7 @@ const MOTIVATIONAL_QUOTES = [
   "Movement is medicine for creating change.",
   "Your body is your most priceless possession. Take care of it.",
   "The only bad workout is the one that didn't happen.",
-  "Take care of your body. It's the only place you have to live.",
+  "Take care of your body. It&apos;s the only place you have to live.",
   "Physical fitness is the first requisite of happiness.",
   "A healthy outside starts from the inside.",
 ];
@@ -55,12 +55,12 @@ const WORK_FOCUS_MESSAGES = [
   "Eliminate distractions. Your best work happens in flow state.",
   "One task at a time. Multitasking is a myth.",
   "Take a deep breath. Calm mind, productive work.",
-  "You're doing great. Keep the momentum going.",
+  "You&apos;re doing great. Keep the momentum going.",
   "Focus on progress, not perfection.",
   "This is your time to create something amazing.",
   "Block out the noise. Your work matters.",
   "Stay present. Quality over quantity.",
-  "You've got this. Trust the process.",
+  "You&apos;ve got this. Trust the process.",
 ];
 
 interface ActivityLog {
@@ -81,14 +81,13 @@ export default function HomePage() {
     workoutState,
     timeRemaining,
     isWithinWorkHours,
-    isInTimeBlock,
     startNewWorkout,
     handleDoneWorkout,
     handleSkipWorkout,
     handlePauseWorkout,
     handleResumeWorkout,
     handleSkipWorkTimer,
-    loadUserData,
+    // removed unused helpers that caused lint errors in this file
   } = useTimer();
 
   const [todayLogs, setTodayLogs] = useState<ActivityLog[]>([]);
@@ -96,8 +95,6 @@ export default function HomePage() {
   const [motivationalQuote, setMotivationalQuote] = useState<string>("");
   const [healthWarning, setHealthWarning] = useState<string>("");
   const [workFocusMessage, setWorkFocusMessage] = useState<string>("");
-  const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermission>("default");
   const [pushSubscription, setPushSubscription] =
     useState<PushSubscription | null>(null);
   const [notificationsUnsupported, setNotificationsUnsupported] =
@@ -117,11 +114,6 @@ export default function HomePage() {
     if (unsupported) {
       console.warn("Web push notifications are not supported in this browser");
       return;
-    }
-
-    // Check current notification permission
-    if ("Notification" in window) {
-      setNotificationPermission(Notification.permission);
     }
 
     // Auto-register if permission already granted
@@ -182,28 +174,7 @@ export default function HomePage() {
     loadPageData(); // Reload quotes
   };
 
-  const estimateCalories = (activity: string): number => {
-    const lower = activity.toLowerCase();
-    if (lower.includes("pushup")) return 7;
-    if (lower.includes("squat")) return 10;
-    if (lower.includes("plank")) return 3;
-    if (lower.includes("jumping jack")) return 8;
-    if (lower.includes("lunge")) return 6;
-    if (lower.includes("calf raise")) return 4;
-    if (lower.includes("walk")) return 15;
-    return 5;
-  };
-
-  const getBodyArea = (activity: string): string | null => {
-    const lower = activity.toLowerCase();
-    if (lower.includes("pushup") || lower.includes("plank"))
-      return "Chest & Core";
-    if (lower.includes("squat") || lower.includes("lunge")) return "Legs";
-    if (lower.includes("jumping jack")) return "Cardio";
-    if (lower.includes("calf")) return "Calves";
-    if (lower.includes("walk")) return "Full Body";
-    return null;
-  };
+  // notificationPermission and some helpers removed — they are unused in this file
 
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -240,7 +211,7 @@ export default function HomePage() {
     if (notificationsUnsupported) {
       toast({
         title: "Notifications not supported",
-        description: "Your browser doesn't support web push notifications",
+        description: "Your browser doesn&apos;t support web push notifications",
       });
       return;
     }
@@ -250,12 +221,12 @@ export default function HomePage() {
       await registerAndSubscribe((subscription) => {
         if (subscription) {
           setPushSubscription(subscription);
-          setNotificationPermission(Notification.permission);
+          // notification permission recorded by browser; state handled elsewhere
 
           toast({
             title: "Notifications enabled!",
             description:
-              "You'll now receive activity reminders even when FlowFit is in the background",
+              "You&apos;ll now receive activity reminders even when FlowFit is in the background",
           });
 
           console.log("Push subscription successful:", subscription.toJSON());
@@ -412,9 +383,9 @@ export default function HomePage() {
                         </h2>
 
                         <p className="text-gray-300 leading-relaxed">
-                          You've done great work today! Remember, mental health
-                          is just as important as physical health. Step away
-                          from the screen and enjoy your evening.
+                          You&apos;ve done great work today! Remember, mental
+                          health is just as important as physical health. Step
+                          away from the screen and enjoy your evening.
                         </p>
 
                         <div className="space-y-2 pt-4">
@@ -450,7 +421,7 @@ export default function HomePage() {
                   <CardContent className="p-6">
                     <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
                       <TrendingUp className="w-5 h-5 text-[#5eead4]" />
-                      Today's Summary
+                      Today&apos;s Summary
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -702,7 +673,7 @@ export default function HomePage() {
                             )}
                           {workoutState.isMajorBreak && (
                             <p className="text-xs sm:text-sm text-gray-300 mt-4 sm:mt-6 text-center leading-relaxed max-w-xs px-4">
-                              Take a longer break. You've earned it! 🎉
+                              Take a longer break. You&apos;ve earned it! 🎉
                             </p>
                           )}
                         </>
@@ -738,8 +709,8 @@ export default function HomePage() {
                                 Great job today! Remember, mental health is just
                                 as important as physical health. Consider going
                                 for a walk, spending time with loved ones, or
-                                enjoying a hobby. Too much screen time isn't
-                                good for you.
+                                enjoying a hobby. Too much screen time
+                                isn&apos;t good for you.
                               </p>
                               <p className="text-xs text-gray-500 italic">
                                 See you tomorrow!
@@ -823,7 +794,7 @@ export default function HomePage() {
                   {!isWorkoutPhase && workoutState.lastCompletedTime && (
                     <div className="text-center max-w-md">
                       <p className="text-sm text-[#5eead4] italic leading-relaxed">
-                        "{motivationalQuote}"
+                        {motivationalQuote}
                       </p>
                     </div>
                   )}

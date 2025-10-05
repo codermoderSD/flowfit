@@ -4,28 +4,37 @@ import webpush from "web-push";
 // Configure VAPID details
 webpush.setVapidDetails(
   "mailto:flowfit@example.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string,
+  process.env.VAPID_PRIVATE_KEY as string
 );
 
-// Access the shared subscriptions map
-let subscriptions: Map<string, webpush.PushSubscription>;
-if (!(global as any).pushSubscriptions) {
-  (global as any).pushSubscriptions = new Map();
+// Access the shared subscriptions map in a type-safe way
+type PushSub = webpush.PushSubscription;
+
+declare global {
+  interface GlobalThis {
+    pushSubscriptions?: Map<string, PushSub>;
+  }
 }
-subscriptions = (global as any).pushSubscriptions;
+
+type GlobalWithPush = { pushSubscriptions?: Map<string, PushSub> } & typeof globalThis;
+const g = globalThis as GlobalWithPush;
+if (!g.pushSubscriptions) {
+  g.pushSubscriptions = new Map<string, PushSub>();
+}
+const subscriptions = g.pushSubscriptions as Map<string, PushSub>;
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const {
-      title,
-      body: messageBody,
-      icon,
-      badge,
-      url,
-      subscription: targetSubscription,
-    } = body;
+    const body = (await request.json()) as {
+      title?: string;
+      body?: string;
+      icon?: string;
+      badge?: string;
+      url?: string;
+      subscription?: webpush.PushSubscription;
+    };
+    const { title, body: messageBody, icon, badge, url, subscription: targetSubscription } = body;
 
     console.log(
       "Send request received. Total subscriptions:",

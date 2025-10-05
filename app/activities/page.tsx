@@ -26,15 +26,10 @@ export default function ActivitiesPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string } | null>(null)
   const [activities, setActivities] = useState<Array<{ id: string; name: string }>>([])
   const [newActivity, setNewActivity] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    loadActivities()
-  }, [])
-
   const loadActivities = async () => {
     const {
       data: { user },
@@ -72,6 +67,10 @@ export default function ActivitiesPage() {
 
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    loadActivities()
+  }, [loadActivities])
 
   const addActivity = async () => {
     if (!user || !newActivity.trim()) return

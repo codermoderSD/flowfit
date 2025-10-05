@@ -21,16 +21,15 @@ export default function LogsPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [user, setUser] = useState<any>(null)
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [todayLogs, setTodayLogs] = useState<ActivityLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     loadLogs()
-  }, [])
+  }, [loadLogs])
 
-  const loadLogs = async () => {
+  async function loadLogs() {
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -40,7 +39,7 @@ export default function LogsPage() {
       return
     }
 
-    setUser(user)
+  // user is not consumed here; skip setting it to avoid unused-variable lint
 
     // Load all logs
     const { data: logsData } = await supabase
@@ -156,7 +155,7 @@ export default function LogsPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-[#5eead4]" />
-                <CardTitle className="text-sm text-gray-400">Today's Activities</CardTitle>
+                <CardTitle className="text-sm text-gray-400">Today&apos;s Activities</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -216,7 +215,7 @@ export default function LogsPage() {
         {/* Today's Activity Log */}
         <Card className="bg-[#151515] border-[#252525] shadow-xl">
           <CardHeader>
-            <CardTitle className="text-lg text-white">Today's Activity Log</CardTitle>
+            <CardTitle className="text-lg text-white">Today&apos;s Activity Log</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-[400px] overflow-y-auto">

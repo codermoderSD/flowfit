@@ -24,7 +24,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [settings, setSettings] = useState<Settings>({
     work_start: "09:00",
     work_end: "17:00",
@@ -77,7 +77,7 @@ export default function SettingsPage() {
     setIsSaving(true);
 
     try {
-      const { data, error } = await supabase.from("user_settings").upsert(
+  const { error } = await supabase.from("user_settings").upsert(
         {
           user_id: user.id,
           work_start: settings.work_start,
@@ -101,7 +101,7 @@ export default function SettingsPage() {
       // Persist to localStorage so Home can pick it up immediately
       try {
         localStorage.setItem("flowFitSettings", JSON.stringify(settings));
-      } catch (e) {
+      } catch {
         // ignore
       }
 
@@ -245,7 +245,7 @@ export default function SettingsPage() {
                 <span>10 cycles</span>
               </div>
               <p className="text-xs text-gray-500">
-                After every {settings.major_break_interval} work cycles, you'll
+                After every {settings.major_break_interval} work cycles, you&apos;ll
                 get a longer break
               </p>
             </div>

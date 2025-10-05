@@ -38,17 +38,16 @@ pnpm install
 
 2. Environment
 
-Create a `.env.local` (copy `.env.example` if present) and add the keys you need. Common variables used in the project:
+Create a `.env.local` and add the keys you need. Common variables used in the project:
 
 ```text
 # Web Push VAPID keys (public key is used in client code)
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_public_key_here
 VAPID_PRIVATE_KEY=your_private_key_here
 
-# (Optional) Supabase for persisted time blocks / user settings
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
 Tip: If you don't have VAPID keys yet you can generate them using the `web-push` CLI or a script. Example using the web-push package:
