@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -100,9 +101,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <Card className="bg-[#151515] border-white/10">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-teal-600">
-              <span className="text-2xl font-bold text-white">FF</span>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="FlowFit Logo"
+              width={64}
+              height={64}
+              className="mx-auto mb-4"
+            />
             <CardTitle className="text-2xl text-white">
               Welcome to FlowFit
             </CardTitle>

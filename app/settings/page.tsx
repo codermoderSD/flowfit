@@ -16,6 +16,8 @@ interface Settings {
   work_start: string;
   work_end: string;
   interval: number;
+  major_break_interval: number;
+  major_break_duration: number;
 }
 
 export default function SettingsPage() {
@@ -27,6 +29,8 @@ export default function SettingsPage() {
     work_start: "09:00",
     work_end: "17:00",
     interval: 60,
+    major_break_interval: 4,
+    major_break_duration: 15,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -59,6 +63,8 @@ export default function SettingsPage() {
         work_start: settingsData.work_start,
         work_end: settingsData.work_end,
         interval: settingsData.interval,
+        major_break_interval: settingsData.major_break_interval || 4,
+        major_break_duration: settingsData.major_break_duration || 15,
       });
     }
 
@@ -77,6 +83,8 @@ export default function SettingsPage() {
           work_start: settings.work_start,
           work_end: settings.work_end,
           interval: settings.interval,
+          major_break_interval: settings.major_break_interval,
+          major_break_duration: settings.major_break_duration,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" }
@@ -184,7 +192,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-gray-300">Interval</Label>
+                <Label className="text-gray-300">Work Interval</Label>
                 <span className="text-lg font-semibold text-[#5eead4]">
                   {settings.interval} minutes
                 </span>
@@ -202,6 +210,66 @@ export default function SettingsPage() {
               <div className="flex justify-between text-xs text-gray-500">
                 <span>15 min</span>
                 <span>120 min</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#151515] border-[#252525] shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-lg text-white">
+              Major Break Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-gray-300">Major Break After</Label>
+                <span className="text-lg font-semibold text-[#5eead4]">
+                  {settings.major_break_interval}{" "}
+                  {settings.major_break_interval === 1 ? "cycle" : "cycles"}
+                </span>
+              </div>
+              <Slider
+                value={[settings.major_break_interval]}
+                onValueChange={(value) =>
+                  setSettings({ ...settings, major_break_interval: value[0] })
+                }
+                min={2}
+                max={10}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>2 cycles</span>
+                <span>10 cycles</span>
+              </div>
+              <p className="text-xs text-gray-500">
+                After every {settings.major_break_interval} work cycles, you'll
+                get a longer break
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-gray-300">Major Break Duration</Label>
+                <span className="text-lg font-semibold text-[#5eead4]">
+                  {settings.major_break_duration} minutes
+                </span>
+              </div>
+              <Slider
+                value={[settings.major_break_duration]}
+                onValueChange={(value) =>
+                  setSettings({ ...settings, major_break_duration: value[0] })
+                }
+                min={10}
+                max={30}
+                step={5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>10 min</span>
+                <span>30 min</span>
               </div>
             </div>
           </CardContent>

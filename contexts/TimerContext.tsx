@@ -20,12 +20,18 @@ interface WorkoutState {
   isPaused: boolean;
   pausedAt: number | null;
   pausedTimeRemaining: number | null;
+  completedCycles: number;
+  isMajorBreak: boolean;
+  isTimeBlockPaused: boolean;
+  activeTimeBlock: TimeBlock | null;
 }
 
 interface UserSettings {
   work_start: string;
   work_end: string;
   interval: number;
+  major_break_interval: number;
+  major_break_duration: number;
 }
 
 interface TimeBlock {
@@ -67,6 +73,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     work_start: "09:00",
     work_end: "17:00",
     interval: 30,
+    major_break_interval: 4,
+    major_break_duration: 15,
   });
   const [activities, setActivities] = useState<string[]>([]);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
@@ -79,6 +87,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     isPaused: false,
     pausedAt: null,
     pausedTimeRemaining: null,
+    completedCycles: 0,
+    isMajorBreak: false,
+    isTimeBlockPaused: false,
+    activeTimeBlock: null,
   });
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
@@ -104,6 +116,47 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     activitiesRef.current = activities;
   }, [activities]);
+
+  // Helper function to send web push notifications
+  const showNotification = async (title: string, body: string) => {
+    try {
+      // Try to send via web push API (works even when page is in background)
+      await fetch("/api/push/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          body,
+          icon: "/icon-192.jpg",
+          badge: "/icon-192.jpg",
+        }),
+      });
+      console.log("Push notification sent via API");
+    } catch (error) {
+      console.error("Failed to send push notification:", error);
+
+      // Fallback to local notification API
+      if ("Notification" in window && Notification.permission === "granted") {
+        try {
+          const notification = new Notification(title, {
+            body,
+            icon: "/icon-192.jpg",
+            badge: "/icon-192.jpg",
+            tag: `flowfit-${Date.now()}`,
+            requireInteraction: false,
+            silent: false,
+          });
+
+          // Auto-close after 8 seconds
+          setTimeout(() => notification.close(), 8000);
+        } catch (e) {
+          console.error("Local notification error:", e);
+        }
+      }
+    }
+  };
 
   const loadUserData = useCallback(async () => {
     const {
@@ -141,6 +194,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         work_start: settingsData.work_start,
         work_end: settingsData.work_end,
         interval: settingsData.interval,
+        major_break_interval: settingsData.major_break_interval || 4,
+        major_break_duration: settingsData.major_break_duration || 15,
       });
     }
 
@@ -168,6 +223,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     const savedWorkoutState = localStorage.getItem("flowFitWorkoutState");
     if (savedWorkoutState) {
       const parsedState = JSON.parse(savedWorkoutState);
+
+      // Load completed cycles from separate storage for persistence
+      const savedCycles = localStorage.getItem("flowFitCompletedCycles");
+      if (savedCycles) {
+        parsedState.completedCycles = parseInt(savedCycles, 10) || 0;
+      }
+
       setWorkoutState(parsedState);
 
       // Immediately compute timeRemaining
@@ -205,6 +267,67 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     const interval = setInterval(() => {
       const state = workoutStateRef.current;
       const currentSettings = settingsRef.current;
+      const blocks = timeBlocksRef.current;
+
+      // Check if we're in a time block
+      const activeBlock = isInTimeBlock();
+
+      // If entering a time block, pause the timer
+      if (activeBlock && !state.isTimeBlockPaused) {
+        setWorkoutState((prev) => ({
+          ...prev,
+          isTimeBlockPaused: true,
+          activeTimeBlock: activeBlock,
+          isPaused: true,
+          pausedAt: Date.now(),
+          pausedTimeRemaining: timeRemaining,
+        }));
+
+        // Notification for time block start
+        showNotification(
+          `🌿 ${activeBlock.title}`,
+          `Time block started. Timer paused. Enjoy your ${activeBlock.title.toLowerCase()}!`
+        );
+        return;
+      }
+
+      // If exiting a time block, resume the timer
+      if (!activeBlock && state.isTimeBlockPaused) {
+        const now = Date.now();
+        const remaining = state.pausedTimeRemaining || 0;
+
+        // Resume based on current phase
+        if (state.currentActivity || state.workoutPhaseStartTime) {
+          setWorkoutState((prev) => ({
+            ...prev,
+            isTimeBlockPaused: false,
+            activeTimeBlock: null,
+            isPaused: false,
+            pausedAt: null,
+            pausedTimeRemaining: null,
+            workoutPhaseStartTime: state.workoutPhaseStartTime
+              ? now - (300000 - remaining)
+              : null,
+          }));
+        } else if (state.nextWorkoutTime) {
+          setWorkoutState((prev) => ({
+            ...prev,
+            isTimeBlockPaused: false,
+            activeTimeBlock: null,
+            isPaused: false,
+            pausedAt: null,
+            pausedTimeRemaining: null,
+            nextWorkoutTime: now + remaining,
+          }));
+        }
+
+        // Notification for time block end
+        showNotification(
+          "⏰ Timer Resumed",
+          "Time block ended. Back to your regular schedule!"
+        );
+        return;
+      }
 
       if (state.isPaused) {
         if (state.pausedTimeRemaining !== null) {
@@ -222,30 +345,58 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         setTimeRemaining(remaining);
 
         if (remaining === 0) {
-          // Workout time ended - transition to work timer
-          const intervalMs = currentSettings.interval * 60 * 1000;
-          setWorkoutState((prev) => ({
-            ...prev,
-            currentActivity: null,
-            workoutPhaseStartTime: null,
-            nextWorkoutTime: now + intervalMs,
-            missedLastWorkout: false,
-          }));
+          // Increment completed cycles
+          const newCycleCount = state.completedCycles + 1;
 
-          // Notification for work mode
-          if (
-            "Notification" in window &&
-            Notification.permission === "granted"
-          ) {
-            try {
-              new Notification("🎯 Focus Mode Started", {
-                body: `Workout time ended. Focus on work for ${currentSettings.interval} minutes.`,
-                icon: "/logo.png",
-                badge: "/logo.png",
-              });
-            } catch (e) {
-              console.error("Notification error:", e);
-            }
+          // Check if it's time for a major break
+          const shouldTakeMajorBreak =
+            newCycleCount >= currentSettings.major_break_interval;
+
+          if (shouldTakeMajorBreak) {
+            // Start major break
+            const majorBreakMs =
+              currentSettings.major_break_duration * 60 * 1000;
+            setWorkoutState((prev) => ({
+              ...prev,
+              currentActivity: null,
+              workoutPhaseStartTime: null,
+              nextWorkoutTime: now + majorBreakMs,
+              missedLastWorkout: false,
+              completedCycles: 0, // Reset cycle count
+              isMajorBreak: true,
+            }));
+
+            // Save cycle count to localStorage
+            localStorage.setItem("flowFitCompletedCycles", "0");
+
+            // Notification for major break
+            showNotification(
+              "🎉 Major Break Time!",
+              `Great work! You've completed ${currentSettings.major_break_interval} cycles. Take a ${currentSettings.major_break_duration}-minute break to recharge!`
+            );
+          } else {
+            // Regular work timer
+            const intervalMs = currentSettings.interval * 60 * 1000;
+            setWorkoutState((prev) => ({
+              ...prev,
+              currentActivity: null,
+              workoutPhaseStartTime: null,
+              nextWorkoutTime: now + intervalMs,
+              missedLastWorkout: false,
+              completedCycles: newCycleCount,
+            }));
+
+            // Save cycle count to localStorage
+            localStorage.setItem(
+              "flowFitCompletedCycles",
+              newCycleCount.toString()
+            );
+
+            // Notification for work mode
+            showNotification(
+              "🎯 Focus Mode Started",
+              `Workout time ended. Focus on work for ${currentSettings.interval} minutes. (Cycle ${newCycleCount}/${currentSettings.major_break_interval})`
+            );
           }
         }
       } else if (state.workoutPhaseStartTime && !state.currentActivity) {
@@ -255,32 +406,58 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         setTimeRemaining(remaining);
 
         if (remaining === 0) {
-          // Relax period ended - start work timer
-          const intervalMs = currentSettings.interval * 60 * 1000;
-          setWorkoutState((prev) => ({
-            ...prev,
-            workoutPhaseStartTime: null,
-            nextWorkoutTime: now + intervalMs,
-          }));
+          // Increment completed cycles
+          const newCycleCount = state.completedCycles + 1;
 
-          // Notify user focus mode started
-          if (
-            "Notification" in window &&
-            Notification.permission === "granted"
-          ) {
-            try {
-              new Notification("🎯 Focus Mode Started", {
-                body: `Relaxation over. Focus on work for ${currentSettings.interval} minutes.`,
-                icon: "/logo.png",
-                badge: "/logo.png",
-              });
-            } catch (e) {
-              console.error("Notification error:", e);
-            }
+          // Check if it's time for a major break
+          const shouldTakeMajorBreak =
+            newCycleCount >= currentSettings.major_break_interval;
+
+          if (shouldTakeMajorBreak) {
+            // Start major break
+            const majorBreakMs =
+              currentSettings.major_break_duration * 60 * 1000;
+            setWorkoutState((prev) => ({
+              ...prev,
+              workoutPhaseStartTime: null,
+              nextWorkoutTime: now + majorBreakMs,
+              completedCycles: 0, // Reset cycle count
+              isMajorBreak: true,
+            }));
+
+            // Save cycle count to localStorage
+            localStorage.setItem("flowFitCompletedCycles", "0");
+
+            // Notification for major break
+            showNotification(
+              "🎉 Major Break Time!",
+              `Excellent! You've completed ${currentSettings.major_break_interval} cycles. Enjoy your ${currentSettings.major_break_duration}-minute major break!`
+            );
+          } else {
+            // Regular work timer
+            const intervalMs = currentSettings.interval * 60 * 1000;
+            setWorkoutState((prev) => ({
+              ...prev,
+              workoutPhaseStartTime: null,
+              nextWorkoutTime: now + intervalMs,
+              completedCycles: newCycleCount,
+            }));
+
+            // Save cycle count to localStorage
+            localStorage.setItem(
+              "flowFitCompletedCycles",
+              newCycleCount.toString()
+            );
+
+            // Notify user focus mode started
+            showNotification(
+              "🎯 Focus Mode Started",
+              `Relaxation over. Focus on work for ${currentSettings.interval} minutes. (Cycle ${newCycleCount}/${currentSettings.major_break_interval})`
+            );
           }
         }
       } else if (state.nextWorkoutTime) {
-        // Work timer (interval period)
+        // Work timer (interval period) or Major break
         const remaining = Math.max(0, state.nextWorkoutTime - now);
         setTimeRemaining(remaining);
 
@@ -291,7 +468,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
               Math.floor(Math.random() * currentActivities.length)
             ];
 
-          setWorkoutState({
+          setWorkoutState((prev) => ({
+            ...prev,
             currentActivity: randomActivity,
             workoutPhaseStartTime: now,
             nextWorkoutTime: null,
@@ -300,29 +478,24 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             isPaused: false,
             pausedAt: null,
             pausedTimeRemaining: null,
-          });
+            isMajorBreak: false, // End major break
+          }));
 
           // Notification
-          if (
-            "Notification" in window &&
-            Notification.permission === "granted"
-          ) {
-            try {
-              new Notification("⏰ Time to Move!", {
-                body: `Let's do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`,
-                icon: "/logo.png",
-                badge: "/logo.png",
-              });
-            } catch (e) {
-              console.error("Notification error:", e);
-            }
-          }
+          const message = state.isMajorBreak
+            ? `Major break over! Let's get back to it: ${randomActivity}`
+            : `Let's do: ${randomActivity}`;
+
+          showNotification(
+            "⏰ Time to Move!",
+            `${message}\n\n5 minutes to boost your energy and focus!`
+          );
         }
       }
     }, 100);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [timeRemaining]);
 
   const isWithinWorkHours = useCallback((): boolean => {
     const now = new Date();
@@ -400,19 +573,16 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       isPaused: false,
       pausedAt: null,
       pausedTimeRemaining: null,
+      completedCycles: workoutStateRef.current.completedCycles,
+      isMajorBreak: false,
+      isTimeBlockPaused: false,
+      activeTimeBlock: null,
     });
 
-    if ("Notification" in window && Notification.permission === "granted") {
-      try {
-        new Notification("⏰ Time to Move!", {
-          body: `Let's do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`,
-          icon: "/logo.png",
-          badge: "/logo.png",
-        });
-      } catch (e) {
-        console.error("Notification error:", e);
-      }
-    }
+    showNotification(
+      "⏰ Time to Move!",
+      `Let's do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`
+    );
   }, [isWithinWorkHours, isInTimeBlock]);
 
   const handleDoneWorkout = useCallback(async () => {
@@ -456,17 +626,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }));
 
     // Notification for work mode
-    if ("Notification" in window && Notification.permission === "granted") {
-      try {
-        new Notification("🎯 Focus Mode Started", {
-          body: `Back to work! Focus for ${settingsRef.current.interval} minutes.`,
-          icon: "/logo.png",
-          badge: "/logo.png",
-        });
-      } catch (e) {
-        console.error("Notification error:", e);
-      }
-    }
+    showNotification(
+      "🎯 Focus Mode Started",
+      `Back to work! Focus for ${settingsRef.current.interval} minutes.`
+    );
   }, []);
 
   const handlePauseWorkout = useCallback(() => {
@@ -542,20 +705,17 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       isPaused: false,
       pausedAt: null,
       pausedTimeRemaining: null,
+      completedCycles: workoutStateRef.current.completedCycles,
+      isMajorBreak: false,
+      isTimeBlockPaused: false,
+      activeTimeBlock: null,
     });
 
     // Send workout notification
-    if ("Notification" in window && Notification.permission === "granted") {
-      try {
-        new Notification("⏰ Time to Move!", {
-          body: `Let's do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`,
-          icon: "/logo.png",
-          badge: "/logo.png",
-        });
-      } catch (e) {
-        console.error("Notification error:", e);
-      }
-    }
+    showNotification(
+      "⏰ Time to Move!",
+      `Let's do: ${randomActivity}\n\n5 minutes to boost your energy and focus!`
+    );
   }, []);
 
   useEffect(() => {
