@@ -146,8 +146,12 @@ export default function HomePage() {
     if (logsData) {
       setTodayLogs(logsData);
     }
+    // Set logs (messages will be set from client-only effect to avoid
+    // SSR/CSR markup mismatch due to Math.random)
+  };
 
-    // Set random messages
+  // Only set random messages on the client to avoid hydration mismatches
+  useEffect(() => {
     setMotivationalQuote(
       MOTIVATIONAL_QUOTES[
         Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)
@@ -161,7 +165,7 @@ export default function HomePage() {
         Math.floor(Math.random() * WORK_FOCUS_MESSAGES.length)
       ]
     );
-  };
+  }, []);
 
   // Wrapper functions that reload logs after done/skip
   const handleDone = async () => {
